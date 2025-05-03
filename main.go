@@ -1,3 +1,5 @@
+// Package main implementa un escáner de red para encontrar servidores Proxmox y dispositivos NAS (Synology y QNAP)
+// en una red local. Utiliza goroutines para realizar búsquedas concurrentes y mejorar el rendimiento.
 package main
 
 import (
@@ -14,6 +16,8 @@ import (
 	"time"
 )
 
+// cleanHTMLTitle limpia las entidades HTML comunes del título de la página
+// reemplazándolas por sus equivalentes en texto plano.
 func cleanHTMLTitle(title string) string {
 	// Reemplazar &nbsp; por espacio
 	title = strings.ReplaceAll(title, "&nbsp;", " ")
@@ -25,12 +29,17 @@ func cleanHTMLTitle(title string) string {
 	return title
 }
 
+// ServerResult representa el resultado de la búsqueda de un servidor.
+// Contiene la dirección IP, el título de la página web y el tipo de servidor.
 type ServerResult struct {
-	IP    string
-	Title string
-	Type  string
+	IP    string // Dirección IP del servidor
+	Title string // Título de la página web del servidor
+	Type  string // Tipo de servidor (Proxmox, Synology, QNAP)
 }
 
+// synologyFinder busca servidores Synology en una dirección IP específica.
+// Se ejecuta como una goroutine y envía los resultados a través del canal results.
+// Utiliza el puerto 5000 para la detección.
 func synologyFinder(ipAddr string, wg *sync.WaitGroup, results chan<- ServerResult) {
 	defer wg.Done()
 
@@ -65,6 +74,9 @@ func synologyFinder(ipAddr string, wg *sync.WaitGroup, results chan<- ServerResu
 	}
 }
 
+// proxmoxFinder busca servidores Proxmox en una dirección IP específica.
+// Se ejecuta como una goroutine y envía los resultados a través del canal results.
+// Utiliza el puerto 8006 y conexión HTTPS para la detección.
 func proxmoxFinder(ipAddr string, wg *sync.WaitGroup, results chan<- ServerResult) {
 	defer wg.Done()
 
@@ -99,6 +111,9 @@ func proxmoxFinder(ipAddr string, wg *sync.WaitGroup, results chan<- ServerResul
 	}
 }
 
+// qnapFinder busca servidores QNAP en una dirección IP específica.
+// Se ejecuta como una goroutine y envía los resultados a través del canal results.
+// Utiliza el puerto 8080 para la detección.
 func qnapFinder(ipAddr string, wg *sync.WaitGroup, results chan<- ServerResult) {
 	defer wg.Done()
 
@@ -133,6 +148,8 @@ func qnapFinder(ipAddr string, wg *sync.WaitGroup, results chan<- ServerResult) 
 	}
 }
 
+// inc incrementa una dirección IP en 1.
+// Se utiliza para generar todas las IPs en un rango CIDR.
 func inc(ip net.IP) {
 	for j := len(ip) - 1; j >= 0; j-- {
 		ip[j]++
@@ -142,6 +159,8 @@ func inc(ip net.IP) {
 	}
 }
 
+// getAllIPs genera una lista de todas las direcciones IP en un rango CIDR.
+// Recibe una IP y una máscara de red, y devuelve un slice con todas las IPs posibles.
 func getAllIPs(ip net.IP, ipNet *net.IPNet) []string {
 	var ips []string
 	for ip := ip.Mask(ipNet.Mask); ipNet.Contains(ip); inc(ip) {
@@ -150,9 +169,8 @@ func getAllIPs(ip net.IP, ipNet *net.IPNet) []string {
 	return ips
 }
 
-// C:\Users\Traballo\go\bin\rsrc.exe -manifest proxmox-findergo.exe.manifest -ico C:\Users\Traballo\GolandProjects\proxmox-findergo\icon.ico -o rsrc.syso
-// go build -o ..\bin\proxmox-findergo.exe
-
+// writeResults guarda los resultados de la búsqueda en un archivo de texto.
+// El archivo incluirá secciones separadas para cada tipo de servidor encontrado.
 func writeResults(filename string, results []ServerResult) error {
 	file, err := os.Create(filename)
 	if err != nil {
@@ -195,16 +213,31 @@ func writeResults(filename string, results []ServerResult) error {
 	return writer.Flush()
 }
 
+// C:\Users\Traballo\go\bin\rsrc.exe -manifest proxmox-findergo.exe.manifest -ico C:\Users\Traballo\GolandProjects\proxmox-findergo\icon.ico -o rsrc.syso
+// go build -o ..\bin\proxmox-findergo.exe
 func main() {
 	fmt.Println("------------------------")
 	fmt.Println("- PROXMOX & NAS FINDER -")
 	fmt.Println("------------------------")
 
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Introduce ip [192.168.10.0/24]:\n> ")
+	fmt.Println("1) 192.168.0.0/24")
+	fmt.Println("2) 192.168.1.0/24")
+	fmt.Println("3) 192.168.8.0/24")
+	fmt.Println("4) 192.168.10.0/24")
+	fmt.Print("  [192.168.10.0/24]: > ")
+
 	ipIn, _ := reader.ReadString('\n')
 	ipIn = strings.TrimSpace(ipIn)
 	if ipIn == "" {
+		ipIn = "192.168.10.0/24"
+	} else if ipIn == "1" {
+		ipIn = "192.168.0.0/24"
+	} else if ipIn == "2" {
+		ipIn = "192.168.1.0/24"
+	} else if ipIn == "3" {
+		ipIn = "192.168.8.0/24"
+	} else if ipIn == "4" {
 		ipIn = "192.168.10.0/24"
 	}
 

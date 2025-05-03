@@ -1,3 +1,5 @@
+// Package main proporciona funcionalidad para obtener información
+// sobre las tarjetas de red del sistema Windows usando WMI.
 package main
 
 import (
@@ -5,38 +7,47 @@ import (
 	"os/exec"
 )
 
+// Nic representa una tarjeta de red con su configuración.
 type Nic struct {
-	Hostname string
-	IP       []string
-	Hardware string
-	MAC      string
-	Gateway  []string
+	Hostname string   // Nombre del host DNS
+	IP       []string // Lista de direcciones IP
+	Hardware string   // Descripción del hardware
+	MAC      string   // Dirección MAC
+	Gateway  []string // Lista de gateways por defecto
 }
 
+// Property representa una propiedad simple en el formato XML de WMI.
 type Property struct {
-	Name  string `xml:"NAME,attr"`
-	Value string `xml:"VALUE"`
+	Name  string `xml:"NAME,attr"` // Nombre de la propiedad
+	Value string `xml:"VALUE"`     // Valor de la propiedad
 }
 
+// PropertyArray representa una propiedad que contiene un array de valores en el formato XML de WMI.
 type PropertyArray struct {
-	Name   string   `xml:"NAME,attr"`
-	Values []string `xml:"VALUE.ARRAY>VALUE"`
+	Name   string   `xml:"NAME,attr"`         // Nombre de la propiedad
+	Values []string `xml:"VALUE.ARRAY>VALUE"` // Array de valores
 }
 
+// Instance representa una instancia de objeto WMI con sus propiedades.
 type Instance struct {
-	Properties     []Property      `xml:"PROPERTY"`
-	PropertyArrays []PropertyArray `xml:"PROPERTY.ARRAY"`
+	Properties     []Property      `xml:"PROPERTY"`       // Propiedades simples
+	PropertyArrays []PropertyArray `xml:"PROPERTY.ARRAY"` // Propiedades tipo array
 }
 
+// Command representa la estructura principal del comando WMI.
 type Command struct {
-	Results Results `xml:"RESULTS"`
+	Results Results `xml:"RESULTS"` // Resultados del comando
 }
 
+// Results representa los resultados del comando WMI.
 type Results struct {
-	Node      string     `xml:"NODE,attr"`
-	Instances []Instance `xml:"CIM>INSTANCE"`
+	Node      string     `xml:"NODE,attr"`    // Nodo de resultados
+	Instances []Instance `xml:"CIM>INSTANCE"` // Instancias encontradas
 }
 
+// GetNics obtiene información detallada sobre todas las tarjetas de red activas del sistema.
+// Utiliza WMI (Windows Management Instrumentation) para obtener la información.
+// Devuelve un slice de Nic y un error si algo falla.
 func GetNics() ([]Nic, error) {
 	cmd := exec.Command("wmic.exe", "nicconfig", "where", "IPEnabled  = True", "get", "ipaddress,MACAddress,IPSubnet,DNSHostName,Caption,DefaultIPGateway", "/format:rawxml")
 	output, err := cmd.Output()
