@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="64x64" href="icon-64.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Proxmox &amp; NAS Finder</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <img src="icon-64.png" alt="" />
+        </div>
+        <div class="brand-copy">
+          <h1>Proxmox <span>&amp;</span> NAS Finder</h1>
+          <p>Descubrimiento de servicios en tu red local</p>
+        </div>
+      </div>
+
+      <div id="status" class="status-pill idle" role="status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="statusText">Preparado</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar" aria-label="Configuración del escaneo">
+        <section class="control-card">
+          <div class="section-heading">
+            <span class="eyebrow">Nuevo análisis</span>
+            <h2>Escanear una red</h2>
+            <p>Busca paneles Proxmox, Synology y QNAP accesibles en el rango.</p>
+          </div>
+
+          <div class="field-group">
+            <label for="cidrInput">Rango CIDR</label>
+            <div class="input-shell" id="cidrShell">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6m4 0h6M7 6.5v5m10-5v5M4 17.5h6m4 0h6M7 12.5v5m10-5v5M7 12h10"/></svg>
+              <input type="text" id="cidrInput" inputmode="decimal" spellcheck="false" autocomplete="off" placeholder="192.168.1.0/24" aria-describedby="cidrHelp cidrError" />
+            </div>
+            <div class="field-meta">
+              <span id="cidrHelp">Ejemplo: 192.168.1.0/24</span>
+              <span id="cidrError" class="field-error" aria-live="polite"></span>
+            </div>
+          </div>
+
+          <div class="field-group compact">
+            <label for="cidrPreset">Rangos habituales</label>
+            <select id="cidrPreset" aria-label="Seleccionar un rango habitual">
+              <option value="">Seleccionar rango…</option>
+            </select>
+          </div>
+
+          <div class="primary-actions">
+            <button id="startBtn" class="button primary" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 7 8 5-8 5V7Z"/></svg>
+              <span>Iniciar escaneo</span>
+            </button>
+            <button id="stopBtn" class="button stop" type="button" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h8v8H8z"/></svg>
+              <span>Detener</span>
+            </button>
+          </div>
+
+          <div id="progressPanel" class="progress-panel" hidden>
+            <div class="progress-copy">
+              <span id="progressLabel">Analizando direcciones…</span>
+              <strong id="progressPercent">0%</strong>
+            </div>
+            <div class="progress-track" role="progressbar" aria-label="Progreso del escaneo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <span id="progressDetail" class="progress-detail">Preparando el análisis</span>
+          </div>
+
+          <div class="utility-actions">
+            <button id="clearBtn" class="text-button" type="button" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5"/></svg>
+              Limpiar
+            </button>
+            <button id="saveBtn" class="text-button" type="button" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 19h14"/></svg>
+              Exportar
+            </button>
+          </div>
+        </section>
+
+        <section class="network-section" aria-labelledby="networkTitle">
+          <div class="network-heading">
+            <div>
+              <span class="eyebrow">Este equipo</span>
+              <h2 id="networkTitle">Conexiones activas</h2>
+            </div>
+            <button id="refreshNicsBtn" class="icon-button" type="button" title="Actualizar conexiones" aria-label="Actualizar conexiones">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg>
+            </button>
+          </div>
+          <div id="nicsList" class="nics-list" aria-live="polite">
+            <div class="nic-skeleton"><span></span><span></span><span></span></div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="content" aria-labelledby="resultsTitle">
+        <div class="content-heading">
+          <div>
+            <span class="eyebrow">Descubrimiento</span>
+            <h2 id="resultsTitle">Dispositivos encontrados</h2>
+            <p id="resultsSubtitle">Los resultados aparecerán en tiempo real durante el escaneo.</p>
+          </div>
+          <div class="total-badge">
+            <strong id="totalCount">0</strong>
+            <span>total</span>
+          </div>
+        </div>
+
+        <div class="summary-grid" aria-label="Resumen de resultados">
+          <article class="summary-card proxmox">
+            <div class="service-symbol" aria-hidden="true"></div>
+            <div><span>Proxmox</span><strong id="proxmoxCount">0</strong></div>
+          </article>
+          <article class="summary-card synology">
+            <div class="service-symbol" aria-hidden="true"></div>
+            <div><span>Synology</span><strong id="synologyCount">0</strong></div>
+          </article>
+          <article class="summary-card qnap">
+            <div class="service-symbol" aria-hidden="true"></div>
+            <div><span>QNAP</span><strong id="qnapCount">0</strong></div>
+          </article>
+        </div>
+
+        <div id="results" class="results-area">
+          <div id="emptyState" class="empty-state">
+            <div class="radar" aria-hidden="true">
+              <span class="radar-ring ring-one"></span>
+              <span class="radar-ring ring-two"></span>
+              <span class="radar-ring ring-three"></span>
+              <span class="radar-sweep"></span>
+              <span class="radar-center"></span>
+            </div>
+            <h3>Tu red está lista para explorar</h3>
+            <p>Selecciona un rango CIDR e inicia el escaneo. Los dispositivos compatibles se agruparán automáticamente.</p>
+          </div>
+          <div id="groups" class="result-groups"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="app.js"></script>
+</body>
+</html>

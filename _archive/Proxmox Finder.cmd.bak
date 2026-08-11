@@ -1,0 +1,4 @@
+@echo off
+REM Launcher alternativo: cierra la consola del padre tras lanzar la GUI.
+start "" /B "%~dp0proxmox-findergo.exe"
+exit

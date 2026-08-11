@@ -1,2 +1,10 @@
 /bin
+/build
+/cmd/bin
+/main.exe
+*.syso
 .vscode
+.idea
+*.log
+wails.log
+resultados_busqueda.txt

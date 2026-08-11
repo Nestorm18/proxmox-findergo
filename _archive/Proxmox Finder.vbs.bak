@@ -1,0 +1,13 @@
+' Launcher silencioso para la GUI.
+' Ejecuta proxmox-findergo.exe sin asociar ninguna ventana de consola
+' (ni la del padre PowerShell/CMD ni la propia de la app).
+'
+' Doble-click en este archivo y solo se abrirá la ventana de la app.
+
+Dim shell
+Set shell = CreateObject("WScript.Shell")
+
+' 0 = ventana oculta, False = no esperar a que termine
+shell.Run """" & Replace(WScript.ScriptFullName, "Proxmox Finder.vbs", "proxmox-findergo.exe") & """", 0, False
+
+Set shell = Nothing

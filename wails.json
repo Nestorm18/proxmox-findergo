@@ -1,0 +1,18 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "proxmox-findergo",
+  "outputfilename": "proxmox-findergo",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dev:watcher": "",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Nestorm18"
+  },
+  "info": {
+    "productName": "Proxmox & NAS Finder",
+    "productVersion": "1.0.0",
+    "comments": "Proxmox & NAS Finder",
+    "icon": "build/appicon.png"
+  }
+}

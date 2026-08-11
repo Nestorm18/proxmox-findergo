@@ -1,0 +1,59 @@
+// main_wails.go — entry point for the Wails GUI version.
+//go:build desktop
+
+package main
+
+import (
+	"embed"
+	"log"
+	"net/http"
+
+	"github.com/wailsapp/wails/v2"
+	"github.com/wailsapp/wails/v2/pkg/options"
+	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+)
+
+//go:embed all:frontend/dist
+var assets embed.FS
+
+// noCacheMiddleware forces WebView2 to never cache frontend assets.
+func noCacheMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+		next.ServeHTTP(w, r)
+	})
+}
+
+// quietFDs detaches from any inherited console so a GUI-subsystem exe never
+// spawns a console window on Windows.
+func quietFDs() {
+	kernel32 := windows.NewLazyDLL("kernel32")
+	_ = kernel32.NewProc("FreeConsole").Call()
+}
+
+func main() {
+	quietFDs()
+	app := NewApp()
+
+	err := wails.Run(&options.App{
+		Title:     "Proxmox & NAS Finder",
+		Width:     1100,
+		Height:    760,
+		MinWidth:  900,
+		MinHeight: 600,
+		AssetServer: &assetserver.Options{
+			Assets:     assets,
+			Middleware: assetserver.ChainMiddleware(noCacheMiddleware),
+		},
+		BackgroundColour: &options.RGBA{R: 18, G: 20, B: 26, A: 1},
+		OnStartup:        app.startup,
+		Bind: []interface{}{
+			app,
+		},
+	})
+	if err != nil {
+		log.Fatalf("error iniciando Wails: %v", err)
+	}
+}

@@ -1,0 +1,1 @@
+package main; import _ "github.com/wailsapp/wails/v2"; func main() {}
